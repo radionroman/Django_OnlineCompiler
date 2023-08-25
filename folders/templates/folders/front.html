@@ -1,0 +1,600 @@
+<!--  -->
+<!DOCTYPE html>
+<html lang=pl>
+
+<head>
+        <title> Compilator </title>
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+                <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+        
+        <!-- Latest compiled JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
+
+ 
+
+                {% load static %}
+        <link rel="stylesheet" href="{% static 'collapse-list.css' %}">
+        <script src="{% static 'collapse-list.js' %}"></script>
+        <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}?ver=1.2">
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" >
+
+</head>
+<body>
+	<div class = "container">
+		<div class = "menu"> 
+			<button class="button-2" >Plik</button> 
+			<button class="button-2" >Edycja</button> 
+			<button class="button-2" >Opcje</button> 
+                             
+                {% if user.is_authenticated %}
+                <button class="logoutButton" >Wyloguj</button>
+
+                <button class="loginButton" data-entry-id="" data-toggle="modal" data-target="#loginModal" style="display: none;">Login</button>
+                <span class="userInfo">{{ name }}</span>
+                {% else %}
+                <button class="logoutButton" style="display: none;">Wyloguj</button>
+
+                <button class="loginButton" data-entry-id="" data-toggle="modal" data-target="#loginModal" >Login</button>
+                <span class="userInfo" style="display: none;">{{ name }}</span>
+                {% endif %}
+
+
+            <button id="compileButton" style="display:none">Kompiluj z wybranymi opcjami</button>
+
+		</div>
+		<div class = "text"> <b id="file_name">{{ file_name }}</b>
+            <pre class = "text"  id = "code">{{ file_content }}</pre> 
+
+		</div>
+		<div class = "files"> 
+
+          <script>
+            $(document).ready(function() {
+            // Attach a click event handler to the delete buttons
+                $('#folderList').on('click', '.deleteButton', function() {
+                    var button = $(this);
+                    var entryId = button.data('entry-id');
+            
+                    // Send an AJAX request to delete the entry
+                    $.ajax({
+                        type: 'POST',
+                        url: 'delete_folder/',  // Replace with the appropriate URL for deleting entries
+                        data: {
+                            folder_id: entryId
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // Remove the button and its parent <li> from the list
+                                    $('#folderList').html(response.message);
+                                
+                            } else {
+                                // Handle any errors or display a message
+                            }
+                        },
+                        error: function(xhr, textStatus, error) {
+                            // Handle any AJAX error, if necessary
+                        }
+                    });
+                });
+                    // Attach a click event handler to the delete buttons
+                    $('#folderList').on('click', '.deleteFileButton', function() {
+                        var button = $(this);
+                        var entryId = button.data('entry-id');
+                
+                        // Send an AJAX request to delete the entry
+                        $.ajax({
+                            type: 'POST',
+                            url: 'delete_file/',  // Replace with the userappropriate URL for deleting entries
+                            data: {
+                                file_id: entryId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    // Remove the button and its parent <li> from the list
+                                        $('#folderList').html(response.message);
+                                    
+                                } else {
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+                    });
+                    var lastXHR = null;
+                    var entryId = null;
+                    $('#folderList').on('click', '.openFileButton', function() {
+                        var button = $(this);
+                        entryId = button.data('entry-id');
+
+                        // Cancel the previous AJAX request, if any
+                        if (lastXHR !== null) {
+                            lastXHR.abort();
+                        }
+                        $('.fragment').html("");
+                        $('#code').html("");
+                        // Send an AJAX request to open the file
+                        var request = $.ajax({
+                            type: 'POST',
+                            url: 'open_file/',  // Replace with the appropriate URL for opening the file
+                            data: {
+                                file_id: entryId
+                            },
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    // Remove the button and its parent <li> from the list
+                                    $('#folderList').html(response.message);
+                                    $('#code').html(response.file_content);
+                                    $('#file_name').html(response.file_name);
+                                    $('#compileButton').show();
+                                    $('.fragment').html(response.asm_content);
+                                } else {
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+
+                        lastXHR = request; // Store the latest AJAX request
+                    });
+          
+                    $(document).on('click', '#compileButton', function() {
+                        // Serialize the form data
+                        var formData = $('#compiler_options').serializeArray();
+                        formData.push({name: 'file_id', value: entryId});
+                        // Send an AJAX request to recompile the file
+                        var request = $.ajax({
+                            type: 'POST',
+                            url: 'recompile/',  // Replace with the appropriate URL for recompiling the file
+                            data: formData,
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    // Handle the successful response, e.g., close the modal or update the folder list
+                                    $('#folderList').html(response.message);
+                                    $('#code').html(response.file_content);
+                                    $('#file_name').html(response.file_name);
+                                    $('.fragment').html(response.asm_content);
+                                    $('#asm_name').html(response.asm_name);
+                                    $('#compileButton').show();
+                                    // Perform any additional actions as needed
+                                } else {
+                                    $('.fragment').html(response.message);
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+
+                        lastXHR = request; // Store the latest AJAX request
+                    });
+                    $('#folderList').on('click', '.addButton', function() {
+                        var addButton = $(this);
+                        var folderId = addButton.data('entry-id');
+                        $('#addFolderForm')[0].reset(); 
+                        $('#addFileForm')[0].reset(); 
+                        // Set the folderId value in the modal form
+                        $('#parentFolderIdFol').val(folderId);
+                        $('#parentFolderIdFil').val(folderId);
+                    });
+                    $(document).on('click', '.logoutButton', function() {
+
+                        $.ajax({
+                            type: 'POST',
+                            url: 'logout/',  // Replace with the appropriate URL for your Django view
+                            success: function(response) {
+                                if (response.success) {
+                                    // Handle the successful response, e.g., close the modal or update the folder list
+                                    $('.logoutButton').hide();
+                                    $('.loginButton').show();
+                                    $('.userInfo').hide();
+                                    $('#folderList').html(response.message);
+                                    $('.text').html(response.message);
+                                    $('.fragment').html(response.message);
+                                    $('#compileButton').hide();
+                                    // Perform any additional actions as needed
+                                } else {
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+                    });    
+                    
+                    $('#addFolderForm').submit(function(event) {
+                        event.preventDefault(); // Prevent the default form submission
+
+                        // Get the form data
+                        var formData = $(this).serialize();
+
+                        // Send an AJAX request to the Django view
+                        $.ajax({
+                            type: 'POST',
+                            url: 'add_folder/',  // Replace with the appropriate URL for your Django view
+                            data: formData,
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    // Handle the successful response, e.g., close the modal or update the folder list
+                                    $('#addFolderModal').modal('hide');
+                                    $('#folderList').html(response.message);
+                                    // Perform any additional actions as needed
+                                } else {
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+                    });
+                    $('#addFileForm').submit(function(event) {
+                        event.preventDefault(); // Prevent the default form submission
+
+                        // Get the form data
+                        var formData = new FormData($(this)[0]);
+
+                        // Send an AJAX request to the Django view
+                        $.ajax({
+                            type: 'POST',
+                            url: 'add_file/',  // Replace with the appropriate URL for your Django view
+                            data: formData,
+                            dataType: 'json',
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                if (response.success) {
+                                    // Handle the successful response, e.g., close the modal or update the folder list
+                                    $('#addFolderModal').modal('hide');
+                                    $('#folderList').html(response.message);
+                                    // Perform any additional actions as needed
+                                } else {
+                                    // Handle any errors or display a message
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+                    });
+                    $('#loginForm').submit(function(event) {
+                        event.preventDefault(); // Prevent the default form submission
+
+                        // Get the form data
+                        var formData = $(this).serialize();
+
+                        // Send an AJAX request to the Django view
+                        $.ajax({
+                            type: 'POST',
+                            url: 'login/',  // Replace with the appropriate URL for your Django view
+                            data: formData,
+                            dataType: 'json',
+                            success: function(response) {
+                                if (response.success) {
+                                    // Handle the successful response, e.g., close the modal or update the folder list
+                                    $('.loginButton').hide();
+                                    $('.logoutButton').show();
+                                    $('#folderList').html(response.message);
+                                    $('.userInfo').show();
+                                    $('.userInfo').html(response.user);
+                                    $('#loginModal').modal('hide');
+             
+                                    // Perform any additional actions as needed
+                                } else {
+                                    // Handle any errors or display a message
+                                    $('#loginerror').html(response.message);
+                                }
+                            },
+                            error: function(xhr, textStatus, error) {
+                                // Handle any AJAX error, if necessary
+                            }
+                        });
+                    });
+                });
+                $(document).on('click', '#hideAllButton', function(){
+                    
+                    $('.section').hide();
+                   
+            });
+            $(document).on('click', '#showAllButton', function(){
+                    
+                    $('.section').show();
+                   
+            });
+    // Function to toggle the visibility of the next 'section' element
+    $(document).on('click', '.title', function() {
+  var titleElement = $(this);
+  var sectionElement = titleElement.next('.section');
+
+  if (sectionElement.is(':visible')) {
+    sectionElement.hide();
+  } else {
+    sectionElement.show();
+  }
+});
+    root = getComputedStyle(document.documentElement)
+    
+    $(document).on('mouseenter', '.title', function() {
+    var titleElement = $(this);
+    var lineId= titleElement.data('line-id');
+    if(lineId == -1)
+    {
+        return;
+    }
+    var preElement = document.getElementById(lineId);
+    preElement.style.backgroundColor = 'lightblue';
+    });
+
+    $(document).on('mouseleave', '.title', function() { 
+    var titleElement = $(this);
+    var lineId= titleElement.data('line-id');
+    
+    var preElement = document.getElementById(lineId);
+    preElement.style.backgroundColor = root.getPropertyValue('--text-bg-color');
+ 
+    
+    });
+    $(document).on('mouseenter', '.error', function() {
+    var titleElement = $(this);
+    var lineId= titleElement.data('line-id');
+    if(lineId == -1)
+    {
+        return;
+    }
+    var preElement = document.getElementById(lineId);
+    preElement.style.backgroundColor = 'lightblue';
+    });
+
+    $(document).on('mouseleave', '.error', function() { 
+    var titleElement = $(this);
+    var lineId= titleElement.data('line-id');
+    
+    var preElement = document.getElementById(lineId);
+    preElement.style.backgroundColor = root.getPropertyValue('--text-bg-color');
+ 
+    
+    });
+    $(document).ready(function(){
+    function getCookie(c_name) {
+        if(document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if(c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if(c_end == -1) c_end = document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end));
+            }
+        }
+        return "";
+    }
+
+    $(function () {
+        $.ajaxSetup({
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            }
+        });
+    });
+
+});
+  </script>
+  
+                            
+<div class="modal" id="addFolderModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Folder</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <ul class="nav nav-tabs">
+                    <li class="active"><a data-toggle="tab" href="#home">Folder</a></li>
+                    <li><a data-toggle="tab" href="#menu1">Plik</a></li>
+                  </ul>
+                  
+                  <div class="tab-content">
+                    <div id="home" class="tab-pane fade in active">
+                        <form id="addFolderForm" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent_folder_id" id="parentFolderIdFol" value="">
+                            <!-- Add other form fields as needed -->
+                            <input type="text" name="name" placeholder="Folder Name">
+                            <input type="submit" value="Add Folder">
+                        </form>
+                    </div>
+                    <div id="menu1" class="tab-pane fade">
+                        <form id="addFileForm" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="parent_folder_id" id="parentFolderIdFil" value="">
+                            <!-- Add other form fields as needed -->
+                            <input type="text" name="name" placeholder="File Name">
+                            <textarea name="description" cols="40" rows="10" class="form-control" id="id_description"></textarea>
+                            <input type="checkbox" name="is_available" class="form-check-input" id="id_is_available" checked="">
+                            <input type="file" name="file" class="form-control-file" id="id_file">
+                            <input type="submit" value="Add File">
+                        </form>
+                    </div>
+                  </div>
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" id="loginModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+
+
+                  <div class="tab-content">
+                    <div id="home" class="tab-pane fade in active">
+                        <h2>Login</h2>
+                        {% if error %}
+                        <p>{{ error }}</p>
+                        {% endif %}
+                        <form method="post" id="loginForm">
+                            {% csrf_token %}
+                            <input type="text" name="username" placeholder="Username">
+                            <input type="password" name="password" placeholder="Password">
+                            <input type="submit" value="Login">
+                        </form>
+                        
+                    </div>
+                    <div id="menu1" class="tab-pane fade">
+                    </div>
+                  </div>
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+    
+        <div id="folderList"> {{ folder_list }}</div> 
+       
+       
+<!-- {% for folder in root_folders %}
+    {% if folder.is_available %}
+    <li style="display:inline-block">{{ folder.name }}
+
+  <button style="display:inline-block"  class="submit" onclick="window.location.href='/folders/add_folder/{{ folder.id }} '" ><i class="fa fa-folder"></i> <i class="fa fa-plus-square"></i></button>
+ <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/add_file/{{ folder.id }} '" ><i class="fa fa-file"></i> <i class="fa fa-plus-square"></i></button>
+
+
+ <input type="submit"  class ="btnSubmit" name="submit" data-value='{{ folder.id }}' > 
+
+      <ul class="collapse">
+
+    {% include "folders/tree.html" with children=folder.get_subfolders  %}
+            {% with files=folder.get_subfiles %}
+        {% for file in files %}
+            {% if file.is_available %}
+            <li class="file">{{ file.name }}</li>
+
+            <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/{{ file.id }} '" ><i class="fa fa-file"></i> <i class="fa fa-folder-open"></i></button>
+             <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/delete_file/{{ file.id }} '" > <i class="fa fa-trash"></i></button>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+    </ul>
+
+    </li><br>
+    {% endif %}
+{% endfor %} -->
+     
+		 </div>
+		<div class = "footer"> 
+            <form action="/folders/recompile/" id="compiler_options" method="POST">
+
+            <input type="hidden" name="file_name" value="{{ file_name }}">
+			<input type="radio" name="tabs" id="tab1" class="tabs" checked >
+			<label for="tab1">STANDARD</label>
+			<input type="radio" name="tabs" id="tab2" class="tabs">
+			<label for="tab2">OPTYMALIZACJE</label>
+			<input type="radio" name="tabs" id="tab3" class="tabs">
+			<label for="tab3">PROCESOR</label>
+			<input type="radio" name="tabs" id="tab4" class="tabs">
+			<label for="tab4">ZALEZNE</label>
+			<div class="tab content1">
+                <label for="standard">SDCC Standard:</label>
+                    <select id="standard" name="standard">
+                        <option value="--std-c89">C89</option>
+                        <option value="--std-c99">C99</option>
+                        <option value="--std-c11">C11</option>
+                    </select></div>
+			<div class="tab content2">
+                <label for="options">Options:</label><br>
+                <input type="checkbox" name="options" value="--no-peep-return">--no-peep-return<br>
+                <input type="checkbox" name="options" value="-c">-c<br>
+                <input type="checkbox" name="options" value="-o a.out">-o a.out
+            </div>
+			<div class="tab content3">
+                <label for="procesor">SDCC Procesor:</label>
+                    <select id="procesor" name="procesor" onchange="showDiv(this.value)">
+                        <option value="-mz80">Z80</option>
+                        <option value="-mstm8">STM8</option>
+                        <option value="-mmcs51">MCS51</option>
+                    </select>
+            </div>
+			<div class="tab content4">
+                <div id="-mz80" class="myDiv" style="display:block;">
+                    <input type="checkbox" name="options_processor" value="--callee-saves-bc">--callee-saves-bc<br>
+                    <input type="checkbox" name="options_processor" value="--fno-omit-frame-pointer">--fno-omit-frame-pointer<br>
+                    <input type="checkbox" name="options_processor" value="--reserve-regs-iy">--reserve-regs-iy<br>
+
+
+                </div>
+                <div id="-mstm8" class="myDiv" style="display:none;">
+                    <input type="checkbox" name="options_processor" value="--model-medium">--model-medium<br>
+                    <input type="checkbox" name="options_processor" value="--model-large">--model-large<br>
+                    <input type="checkbox" name="options_processor" value="--code-size 128">code<br>
+                </div>
+                <div id="-mmcs51" class="myDiv" style="display:none;">
+                    <select name="options_processor">
+                        <option value="--model-small">small</option>
+                        <option value="--model-medium">medium</option>
+                        <option value="--model-large">large</option>
+                        <option value="--model-huge">huge</option>
+                    </select>
+                </div>
+            </div>
+
+
+        </form>
+		</div>
+		<div class = "fragment">
+        <!-- {% if asm_content is not None %}
+            <b>Fragment kodu</b>
+            <form action="/folders/save_file/" id="compiler_options" method="POST">
+                    {% csrf_token %}
+            <div id="compileFormFields">            
+                <input type="hidden" name="file_name" value="{{ asm_name }}">
+                <input type="hidden" name="content" value="{{ asm_content }}">
+            </div>        
+
+             <button class="submit" >Zapisz .asm</button>
+            </form>
+
+        {% endif %} -->
+
+        </div>
+</div>
+<script>
+        function showDiv(divId) {
+			var divs = document.querySelectorAll(".myDiv");
+			for (var i = 0; i < divs.length; i++) {
+				divs[i].style.display = "none";
+                var checkboxes = divs[i].querySelectorAll("input[type=checkbox]");
+                checkboxes.forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+			}
+			document.getElementById(divId).style.display = "block";
+		}
+</script>
+</body>
+</html>

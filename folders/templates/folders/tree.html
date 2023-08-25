@@ -1,0 +1,46 @@
+
+<script>
+    $(document).ready(function() {
+        $('.btnSubmit').click(function() {
+            var data = new FormData();
+            var folder = $(this).data('value');
+            data.append('folder_id', folder);
+            $.ajax({
+                type: 'POST',
+                url: 'delete_folder/0/',
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function(json) {
+                    
+                }
+            })
+        });
+    });
+            
+ </script>
+{% for child in children %}
+{% if child.is_available %}
+    <li>
+
+    {{ child.name }}
+      <button style="display:inline-block"  class="submit" onclick="window.location.href='/folders/add_folder/{{ child.id }} '" ><i class="fa fa-folder"></i> <i class="fa fa-plus-square"></i></button>
+ <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/add_file/{{ child.id }} '" ><i class="fa fa-file"></i> <i class="fa fa-plus-square"></i></button>
+ 
+ <input type="submit"  class ="btnSubmit" name="submit" data-value='{{ child.id }}' > 
+         <ul>
+            {% include "folders/tree.html" with children=child.get_subfolders %}
+                     {% with files=child.get_subfiles %}
+        {% for file in files %}
+            {% if file.is_available %}
+            <li class="file">{{ file.name }}</li>
+              <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/{{ file.id }} '" ><i class="fa fa-file"></i> <i class="fa fa-folder-open"></i></button>
+             <button style="display:inline-block" class="submit" onclick="window.location.href='/folders/delete_file/{{ file.id }} '" > <i class="fa fa-trash"></i></button>
+            {% endif %}
+        {% endfor %}
+        {% endwith %}
+        </ul>
+
+    </li>
+    {% endif %}
+{% endfor %}

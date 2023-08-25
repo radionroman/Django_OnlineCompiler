@@ -1,0 +1,33 @@
+/* (A) CONTAINER */
+.collapse, .collapse ul {
+  list-style-type: none;
+  padding-left: 5px;
+}
+
+/* (B) LIST ITEMS */
+.collapse li { padding: 5px; }
+
+li.file {
+  background-color: red;
+}
+/* (C) TOGGLE */
+.toggle {
+  padding: 10px;
+  cursor: pointer;
+}
+.toggle::before {
+  display: inline-block;
+  width: 15px;
+  content: ">";
+}
+.toggle.show::before { content: "˅"; }
+
+/* (D) SHOW/HIDE */
+.collapse ul { display: none; }
+.toggle.show + ul { display: block; }
+
+/* (X) NOT IMPORTANT */
+* {
+  font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+}
